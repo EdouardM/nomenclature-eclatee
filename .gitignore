@@ -9,6 +9,9 @@ Debug
 obj
 bin
 
+### Ignore data directory ###
+data/
+
 
 ### Linux ###
 *~

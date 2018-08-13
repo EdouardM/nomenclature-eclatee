@@ -2,5 +2,3 @@
 
 open Deedle
 open FSharp.Data
-open XPlot.GoogleCharts
-open XPlot.GoogleCharts.Deedle
