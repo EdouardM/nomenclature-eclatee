@@ -1,16 +1,18 @@
 #load "../packages/FsLab/FsLab.fsx"
+open XPlot.GoogleCharts
 #load "./Bom.fsx"
 
 
 open System
-open Deedle
 open FSharp.Data
+open Deedle
 
 open Bom
 
 let [<Literal>] basePath = __SOURCE_DIRECTORY__ + @"../../data/"
 
 module BomData =
+    open Deedle.Frame
     let [<Literal>] path = basePath + "nomenclatures.csv"
 
     type BomData = CsvProvider<path, Schema= Bom.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
@@ -20,29 +22,38 @@ module BomData =
 
     let toObs (row: BomRow) = 
         {
-            CodeProduit = row.``Code produit``
-            VersionVariante = row.``Version de la variante``
+            CodeProduit = row.CodeProduit
+            VersionVariante = row.VersionVariante
             Evolution = row.Evolution
-            Libelle = row.Libellé
-            CodeFamilleLog = row.``Code Famille Logistique``
-            Nature = row.``Nature du produit``
-            Quantite = row.Quantité
-            CodeComposant = row.``Code Composant``
-            VersionComposant = row.Version
-            QuantiteComposant = row.``Quantité composant``
-            SousEnsemble = row.``Sous ensemble``
+            Libelle = row.Libelle
+            CodeFamilleLog = row.CodeFamilleLog
+            Nature = row.Nature
+            Quantite = row.Quantite
+            CodeComposant = row.CodeComposant
+            VersionComposant = row.VersionComposant
+            QuantiteComposant = row.QuantiteComposant
+            SousEnsemble = row.SousEnsemble
         }
 
     let obs = csvBom.Rows |> Seq.map toObs
 
-    let df = Frame.ofRecords obs
+    let df =  Deedle.Frame.ofRecords obs
+        
 
     module Transforms = 
-        ()
+        let fillMissingWithBlank (colname: string) (df: Frame<'R, string>) = 
+            let newSeries = 
+                df
+                |> Frame.getCol colname
+                |> Series.fillMissingWith ""
+            df |> Frame.replaceCol colname newSeries                        
 
     open Transforms
 
-    let cleanDF : Frame<int,string> = df
+    let cleanDF : Frame<int,string> =
+        df
+        |> fillMissingWithBlank InfoComposants.versionComposant
+
 
 let dfBom = 
     let cleanDF = BomData.cleanDF
@@ -50,4 +61,3 @@ let dfBom =
 
     cleanDF.SaveCsv(path=pathBomClean, separator=';')
     cleanDF
-    

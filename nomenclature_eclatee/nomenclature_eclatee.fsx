@@ -1,20 +1,45 @@
 #load "..\packages/FsLab/FsLab.fsx"
-open XPlot.GoogleCharts
+#load "./DFBom.fsx"
 
-open Deedle
-open FSharp.Data
+open DFBom
+open Bom
+open BomData
+open Deedle.Frame
+open Deedle.Series
 
-let [<Literal>] Sourcedir = """c:\Users\FREDOMOU\Documents\04. Dev\nomenclature_eclatee"""
+let df = dfBom
 
-let [<Literal>] NomPath = Sourcedir + "/data/nomenclatures.csv"
+type BomId = 
+    {
+        CodeProduit : string
+        Variante : string
+        Evolution : string
+    }
 
-let [<Literal>] NomSchema =
-    "Code produit(string), Version de la variante(string), Evolution(string), \
-    Libellé (string), Code Famille Logistique(int option), Nature du produit(string), \
-    Quantité(int), Code Composant(string option),Version(string option), \
-    Quantité composant(int option), Sous ensemble(string option)"
+//Regroupement des lignes par code produit:
+let byBomId =
+    df
+    |> groupRowsUsing (fun _ c -> 
+        { 
+            CodeProduit = c.GetAs<string>(InfoProduit.codeProduit) 
+            Variante = c.GetAs<string>(InfoProduit.versionVariante)
+            Evolution = c.GetAs<string>(InfoProduit.evolution)
+        }        
+    )
+    |> nest
+    |> observations
+    |> Map.ofSeq
 
-type Nomenclature = CsvProvider<NomPath, ";", Schema = NomSchema>
-type NomRow = Nomenclature.Row
+let getComponents (id: BomId): seq<string * string * float> = 
+    byBomId.[id]
+    |> sliceCols InfoComposants.list
+    |> mapRowValues(fun c -> 
+        let code = c.GetAs<string> InfoComposants.codeComposant
+        let version = c.GetAs<string> InfoComposants.versionComposant
+        let quantity = c.GetAs<float> InfoComposants.quantiteComposant
+        
+        code, version , quantity
+    )
+    |> values
 
-let nom = Nomenclature.Load(NomPath)
+getComponents {CodeProduit = "10003"; Variante ="1"; Evolution ="1"} |> Seq.head

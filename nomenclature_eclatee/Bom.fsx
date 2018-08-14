@@ -8,17 +8,17 @@ module InfoProduit =
         let [<Literal>] versionVarianteT = "string"
         let [<Literal>] evolutionT = "string" 
         let [<Literal>] libelleT = "string"
-        let [<Literal>] codeFamilleLogT = "int option"
+        let [<Literal>] codeFamilleLogT = "string"
         let [<Literal>] natureT = "string"
         let [<Literal>] quantiteT = "int"
         
-    let [<Literal>] codeProduit = "Code produit"
-    let [<Literal>] versionVariante = "Version de la variante"
+    let [<Literal>] codeProduit = "CodeProduit"
+    let [<Literal>] versionVariante = "VersionVariante"
     let [<Literal>] evolution = "Evolution"
-    let [<Literal>] libelle = "Libellé"
-    let [<Literal>] codeFamilleLog = "Code Famille Logistique"
-    let [<Literal>] nature = "Nature du produit"
-    let [<Literal>] quantite = "Quantité"
+    let [<Literal>] libelle = "Libelle"
+    let [<Literal>] codeFamilleLog = "CodeFamilleLog"
+    let [<Literal>] nature = "Nature"
+    let [<Literal>] quantite = "Quantite"
 
     open ColTypes
 
@@ -41,15 +41,15 @@ module InfoProduit =
     
 module InfoComposants = 
     module ColTypes = 
-        let [<Literal>] codeComposantT = "string option"
-        let [<Literal>] versionComposantT = "string option"
-        let [<Literal>] quantiteComposantT = "int option"
-        let [<Literal>] sousEnsembleT = "string option"
+        let [<Literal>] codeComposantT = "string"
+        let [<Literal>] versionComposantT = "string"
+        let [<Literal>] quantiteComposantT = "float"
+        let [<Literal>] sousEnsembleT = "string"
 
-    let [<Literal>] codeComposant = "Code Composant"
-    let [<Literal>] versionComposant = "Version"
-    let [<Literal>] quantiteComposant = "Quantité composant"
-    let [<Literal>] sousEnsemble = "Sous ensemble"
+    let [<Literal>] codeComposant = "CodeComposant"
+    let [<Literal>] versionComposant = "VersionComposant"
+    let [<Literal>] quantiteComposant = "QuantiteComposant"
+    let [<Literal>] sousEnsemble = "SousEnsemble"
 
     open ColTypes
 
@@ -69,13 +69,13 @@ type Observation = {
     VersionVariante : string
     Evolution : string
     Libelle : string
-    CodeFamilleLog : int option
+    CodeFamilleLog : string
     Nature : string
     Quantite : int
-    CodeComposant: string option
-    VersionComposant : string option
-    QuantiteComposant: int option
-    SousEnsemble : string option  
+    CodeComposant: string
+    VersionComposant : string
+    QuantiteComposant: float
+    SousEnsemble : string  
 }
 
 
