@@ -50,9 +50,7 @@ module BomData =
 
     open Transforms
 
-    let cleanDF : Frame<int,string> =
-        df
-        |> fillMissingWithBlank InfoComposants.versionComposant
+    let cleanDF : Frame<int,string> = df
 
 
 let dfBom = 

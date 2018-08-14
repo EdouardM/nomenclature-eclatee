@@ -41,10 +41,10 @@ module InfoProduit =
     
 module InfoComposants = 
     module ColTypes = 
-        let [<Literal>] codeComposantT = "string"
+        let [<Literal>] codeComposantT = "string option"
         let [<Literal>] versionComposantT = "string"
-        let [<Literal>] quantiteComposantT = "float"
-        let [<Literal>] sousEnsembleT = "string"
+        let [<Literal>] quantiteComposantT = "float option"
+        let [<Literal>] sousEnsembleT = "string option"
 
     let [<Literal>] codeComposant = "CodeComposant"
     let [<Literal>] versionComposant = "VersionComposant"
@@ -72,10 +72,10 @@ type Observation = {
     CodeFamilleLog : string
     Nature : string
     Quantite : int
-    CodeComposant: string
+    CodeComposant: string option
     VersionComposant : string
-    QuantiteComposant: float
-    SousEnsemble : string  
+    QuantiteComposant: float option
+    SousEnsemble : string option
 }
 
 
