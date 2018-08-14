@@ -64,7 +64,7 @@ module InfoComposants =
         quantiteComposant; sousEnsemble ]
     
 
-type BomLine = {
+type Observation = {
     CodeProduit : string
     VersionVariante : string
     Evolution : string
