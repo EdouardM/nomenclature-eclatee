@@ -43,17 +43,14 @@ let toBomCompo code version quantity =
 
 let toBomCompoList (df: Deedle.Frame<'R, string>) = 
         df        
-        |> Frame.sliceCols (InfoProduit.quantite ::  InfoComposants.list)
+        |> Frame.sliceCols InfoComposants.list
         |> Frame.mapRowValues(fun c -> 
             let code = c.GetAs<string option> InfoComposants.codeComposant
             let version = c.GetAs<string> InfoComposants.versionComposant
             
             let q = c.GetAs<float option> InfoComposants.quantiteComposant
-            let qP = c.GetAs<float> InfoComposants.quantiteComposant
 
-            let q2 = Option.map(fun q -> q / qP ) q
-
-            Option.map3 toBomCompo code (Some version) q2
+            Option.map3 toBomCompo code (Some version) q
         )
         |> Series.values   
         |> List.ofSeq
@@ -143,4 +140,4 @@ let saveBomAllLevels () =
     System.IO.File.WriteAllLines(outputPath, bomAllLevels)
 
     
-saveBomAllLevels()
+saveBomAllLevels ()
