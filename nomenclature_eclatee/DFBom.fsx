@@ -13,12 +13,18 @@ let [<Literal>] basePath = __SOURCE_DIRECTORY__ + @"../../data/"
 
 module BomData =
     open Deedle.Frame
-    let [<Literal>] path = basePath + "nomenclatures.csv"
+    let [<Literal>] path = basePath + "nomenclatures.csv"    
+    let [<Literal>] codeVentePath = basePath + "nomenclatures_code_ventes_actifs.csv"
+    let [<Literal>] sf1Path = basePath + "nomenclatures_SF1_actifs.csv"
+    let [<Literal>] sf2Path = basePath + "nomenclatures_SF2_actifs.csv"
 
     type BomData = CsvProvider<path, Schema= Bom.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
     type BomRow = BomData.Row
     
-    let csvBom = BomData.Load(path)
+    let csvBomCV = BomData.Load(codeVentePath)
+    let csvBomSF1 = BomData.Load(sf1Path)
+    let csvBomSF2 = BomData.Load(sf2Path)
+
 
     let toObs (row: BomRow) = 
         {
@@ -35,7 +41,12 @@ module BomData =
             SousEnsemble = row.SousEnsemble
         }
 
-    let obs = csvBom.Rows |> Seq.map toObs
+    let obs = 
+        let cvs = csvBomCV.Rows |> Seq.map toObs
+        let sf1 = csvBomSF1.Rows |> Seq.map toObs
+        let sf2 = csvBomSF2.Rows |> Seq.map toObs
+
+        Seq.concat [ cvs; sf1; sf2 ]
 
     let df =  Deedle.Frame.ofRecords obs
         

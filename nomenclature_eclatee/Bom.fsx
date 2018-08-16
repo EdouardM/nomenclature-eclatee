@@ -5,17 +5,17 @@ module InfoProduit =
 
     module ColTypes = 
         let [<Literal>] codeProduitT = "string"
+        let [<Literal>] libelleT = "string"
         let [<Literal>] versionVarianteT = "string"
         let [<Literal>] evolutionT = "string" 
-        let [<Literal>] libelleT = "string"
         let [<Literal>] codeFamilleLogT = "string"
         let [<Literal>] natureT = "string"
         let [<Literal>] quantiteT = "float"
         
     let [<Literal>] codeProduit = "CodeProduit"
+    let [<Literal>] libelle = "Libelle"
     let [<Literal>] versionVariante = "VersionVariante"
     let [<Literal>] evolution = "Evolution"
-    let [<Literal>] libelle = "Libelle"
     let [<Literal>] codeFamilleLog = "CodeFamilleLog"
     let [<Literal>] nature = "Nature"
     let [<Literal>] quantite = "Quantite"
@@ -24,9 +24,9 @@ module InfoProduit =
 
     let [<Literal>] schema = 
         codeProduit         + " (" + codeProduitT       + "), "
+        + libelle           + " (" + libelleT           + "), "
         + versionVariante   + " (" + versionVarianteT   + "), "
         + evolution         + " (" + evolutionT         + "), "
-        + libelle           + " (" + libelleT           + "), "
         + codeFamilleLog    + " (" + codeFamilleLogT    + "), "
         + nature            + " (" + natureT            + "), "
         + quantite          + " (" + quantiteT          + ")"

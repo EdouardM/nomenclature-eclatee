@@ -32,11 +32,17 @@ let byBomId =
     |> Frame.nest
 
 
+byBomId.Get {CodeProduit = "10057"; Variante = "1"; Evolution = "1" }
+
+byBomId
+|> Series.observations
+|> Seq.head
+
+
 type BomCompo = {
     CodeComposant : string
     Version : string
-    Quantite: float
-}
+    Quantite: float}
 
 let toBomCompo code version quantity = 
     { CodeComposant = code; Version =  version; Quantite = quantity }
@@ -125,7 +131,7 @@ let dictBomAllLevel =
     byBomIdAllLevel
     |> dict  
 
-dictBomAllLevel.[ {CodeProduit = "10054"; Variante = "1"; Evolution = "1" } ]
+dictBomAllLevel.[ {CodeProduit = "10057"; Variante = "1"; Evolution = "1" } ]
 (****************)
 
 let saveBomAllLevels () = 
