@@ -1,5 +1,5 @@
-#load "../packages/FsLab/FsLab.fsx"
-open XPlot.GoogleCharts
+#r "../packages/Deedle/lib/net40/Deedle.dll"
+#r "../packages/FSharp.Data/lib/net45/FSharp.Data.dll"
 #load "./Bom.fsx"
 
 

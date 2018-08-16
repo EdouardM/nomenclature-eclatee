@@ -10,7 +10,7 @@ module InfoProduit =
         let [<Literal>] libelleT = "string"
         let [<Literal>] codeFamilleLogT = "string"
         let [<Literal>] natureT = "string"
-        let [<Literal>] quantiteT = "int"
+        let [<Literal>] quantiteT = "float"
         
     let [<Literal>] codeProduit = "CodeProduit"
     let [<Literal>] versionVariante = "VersionVariante"
@@ -71,7 +71,7 @@ type Observation = {
     Libelle : string
     CodeFamilleLog : string
     Nature : string
-    Quantite : int
+    Quantite : float
     CodeComposant: string option
     VersionComposant : string
     QuantiteComposant: float option
