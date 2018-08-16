@@ -18,7 +18,7 @@ module BomData =
     let [<Literal>] sf1Path = basePath + "nomenclatures_SF1_actifs.csv"
     let [<Literal>] sf2Path = basePath + "nomenclatures_SF2_actifs.csv"
 
-    type BomData = CsvProvider<path, Schema= Bom.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
+    type BomData = CsvProvider<sf1Path, Schema= Bom.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
     type BomRow = BomData.Row
     
     let csvBomCV = BomData.Load(codeVentePath)

@@ -134,16 +134,31 @@ let dictBomAllLevel =
 dictBomAllLevel.[ {CodeProduit = "10057"; Variante = "1"; Evolution = "1" } ]
 (****************)
 
+type BomAllLevels = {
+    CodeProduit : string
+    Variante: string
+    CodeComposant : string
+    QuantiteCompo : float
+
+}
+
+let dfAllBomLevels = 
+    byBomIdAllLevel
+    |> Seq.collect(fun (bomId, compos) -> 
+        compos
+        |> List.map(fun compo -> 
+            {
+                CodeProduit = bomId.CodeProduit
+                Variante = bomId.Variante
+                CodeComposant = compo.CodeComposant
+                QuantiteCompo = compo.Quantite
+            }) )
+    |> Frame.ofRecords        
+
+
 let saveBomAllLevels () = 
-    let bomAllLevels = 
-        byBomIdAllLevel
-        |> List.ofSeq
-        |> List.collect(fun (bomId, compos) -> List.map(fun compo -> sprintf "%s;%s;%s;%f" bomId.CodeProduit bomId.Variante compo.CodeComposant compo.Quantite) compos)
-
-
     let outputPath = basePath + "bommAllLevels.csv"
 
-    System.IO.File.WriteAllLines(outputPath, bomAllLevels)
-
+    dfAllBomLevels.SaveCsv(outputPath, separator=';')
     
 saveBomAllLevels ()
