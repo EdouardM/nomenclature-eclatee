@@ -1,7 +1,9 @@
 source https://www.nuget.org/api/v2
 
-framework: >= net461
-nuget FsLab
+framework: >= net45
+nuget Deedle
+nuget FSharp.Data
+nuget FSharp.Core
 
 group Build
 source https://www.nuget.org/api/v2
