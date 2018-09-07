@@ -85,6 +85,7 @@ let collectComponents (l : BomCompo list) =
                     loop children []
                     |> List.map(fun child -> 
                         { child with Quantite = c.Quantite * child.Quantite} )
+                    |> fun l -> c :: l                    
             
             let acc' = List.concat [ acc; newAcc ]
             loop cs acc'             
@@ -92,7 +93,7 @@ let collectComponents (l : BomCompo list) =
 
 (****************)
 //TEST
-getComponents {CodeProduit = "10054"; Variante = "1"; Evolution = "1" }
+getComponents {CodeProduit = "10057"; Variante = "1"; Evolution = "1" }
 |> Option.map collectComponents
 |> Option.map Seq.ofList
 (****************)
@@ -132,6 +133,8 @@ let dictBomAllLevel =
     |> dict  
 
 dictBomAllLevel.[ {CodeProduit = "10057"; Variante = "1"; Evolution = "1" } ]
+|> List.map(fun c -> int c.CodeComposant)
+|> List.sort
 (****************)
 
 type BomAllLevels = {
