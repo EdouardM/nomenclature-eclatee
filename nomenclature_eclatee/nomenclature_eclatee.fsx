@@ -42,29 +42,37 @@ byBomId
 type BomCompo = {
     CodeComposant : string
     Version : string
-    Quantite: float}
+    Quantite: float
+    Parents: string list
+    }
 
-let toBomCompo code version quantity = 
-    { CodeComposant = code; Version =  version; Quantite = quantity }
+let toBomCompo code version quantity parents = 
+    { CodeComposant = code; Version =  version; Quantite = quantity; Parents = parents }
 
-let toBomCompoList (df: Deedle.Frame<'R, string>) = 
+let toBomCompoList 
+    (bomId: BomId) 
+    (parents: string list) 
+    (df: Deedle.Frame<'R, string>) = 
         df        
         |> Frame.sliceCols InfoComposants.list
         |> Frame.mapRowValues(fun c -> 
             let code = c.GetAs<string option> InfoComposants.codeComposant
             let version = c.GetAs<string> InfoComposants.versionComposant
-            
             let q = c.GetAs<float option> InfoComposants.quantiteComposant
 
+            //add the list of parents: actual bomId + its parents
+            let ps = bomId.CodeProduit :: parents 
+            
             Option.map3 toBomCompo code (Some version) q
+            |> Option.map (fun f -> f ps)
         )
         |> Series.values   
         |> List.ofSeq
         |> List.choose id
 
-let getComponents bomId = 
+let getComponents bomId parents = 
     Series.tryGet bomId byBomId
-    |> Option.map toBomCompoList
+    |> Option.map ( toBomCompoList bomId parents )
     
 let toBomId (compo: BomCompo) = 
     if String.IsNullOrEmpty(compo.Version) 
@@ -77,7 +85,7 @@ let collectComponents (l : BomCompo list) =
         | [] -> acc
         | c :: cs -> 
             let bomId = toBomId c
-            let compos = getComponents bomId
+            let compos = getComponents bomId (c.Parents)
             let newAcc = 
                 match compos with
                 | None -> [c]
@@ -93,7 +101,7 @@ let collectComponents (l : BomCompo list) =
 
 (****************)
 //TEST
-getComponents {CodeProduit = "10057"; Variante = "1"; Evolution = "1" }
+getComponents {CodeProduit = "10057"; Variante = "1"; Evolution = "1" } []
 |> Option.map collectComponents
 |> Option.map Seq.ofList
 (****************)
@@ -104,7 +112,7 @@ let byBomIdAllLevel =
     |> Series.keys
     |> Seq.choose(fun bomId -> 
         let compos = 
-            getComponents bomId
+            getComponents bomId []
             |> Option.map collectComponents
             |> Option.map (fun compos -> 
                 compos 
@@ -117,6 +125,10 @@ let byBomIdAllLevel =
                             level
                             |> List.map (fun c -> c.Quantite)
                             |> List.reduce (+) 
+                        Parents = 
+                            level 
+                            |> List.collect (fun c -> c.Parents)
+                            |> List.distinct
                     }
                 )) 
                 
@@ -142,7 +154,7 @@ type BomAllLevels = {
     Variante: string
     CodeComposant : string
     QuantiteCompo : float
-
+    ParentsCompo : string
 }
 
 let dfAllBomLevels = 
@@ -155,6 +167,7 @@ let dfAllBomLevels =
                 Variante = bomId.Variante
                 CodeComposant = compo.CodeComposant
                 QuantiteCompo = compo.Quantite
+                ParentsCompo = compo.Parents |> String.concat ";"
             }) )
     |> Frame.ofRecords        
 
