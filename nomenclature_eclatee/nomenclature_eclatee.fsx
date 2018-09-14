@@ -132,7 +132,7 @@ let dictBomAllLevel =
     byBomIdAllLevel
     |> dict  
 
-dictBomAllLevel.[ {CodeProduit = "10057"; Variante = "1"; Evolution = "1" } ]
+dictBomAllLevel.[ {CodeProduit = "26184"; Variante = "1"; Evolution = "1" } ]
 |> List.map(fun c -> int c.CodeComposant)
 |> List.sort
 (****************)
