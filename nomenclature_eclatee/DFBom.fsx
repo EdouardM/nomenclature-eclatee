@@ -14,7 +14,7 @@ let [<Literal>] basePath = __SOURCE_DIRECTORY__ + @"../../data/"
 module BomData =
     open Deedle.Frame
     let [<Literal>] path = basePath + "nomenclatures.csv"    
-    let [<Literal>] codeVentePath = basePath + "nomenclatures_code_ventes_actifs.csv"
+    let [<Literal>] codeVentePath = basePath + "nomenclatures_codes_ventes_actifs.csv"
     let [<Literal>] sf1Path = basePath + "nomenclatures_SF1_actifs.csv"
     let [<Literal>] sf2Path = basePath + "nomenclatures_SF2_actifs.csv"
 
