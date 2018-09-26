@@ -1,17 +1,26 @@
 #r "../packages/Deedle/lib/net40/Deedle.dll"
+open DFClassif
 #load "./DFBom.fsx"
+#load "./DFClassif.fsx"
+#load "./Classification.fsx"
 
 open DFBom
+open DFClassif
 open Bom
 open BomData
+open Classification
 open Deedle 
 open System
 
 type DF = Frame
 
-let df = dfBom
+let dfClassif = dfClassif
 
-
+let df = 
+    let ssEs = dfClassif.getCol(Classification.File.sousEnsemble)
+    let newCol = dfBom.RowKeys
+    newCol
+    
 type BomId = 
     {
         CodeProduit : string
@@ -38,20 +47,33 @@ byBomId
 |> Series.observations
 |> Seq.head
 
+type Parent = 
+    {
+        CodeParent : string
+        SousEnsemble : string
+    }
+
 
 type BomCompo = {
     CodeComposant : string
     Version : string
     Quantite: float
-    Parents: string list
+    Parents: Parent list
+    SousEnsemble: string
     }
 
-let toBomCompo code version quantity parents = 
-    { CodeComposant = code; Version =  version; Quantite = quantity; Parents = parents }
+let toBomCompo code version quantity parents sousEnsemble = 
+    { 
+        CodeComposant = code; 
+        Version =  version;
+        Quantite = quantity;
+        Parents = parents; 
+        SousEnsemble = sousEnsemble 
+    }
 
 let toBomCompoList 
     (bomId: BomId) 
-    (parents: string list) 
+    (parents: Parent list) 
     (df: Deedle.Frame<'R, string>) = 
         df        
         |> Frame.sliceCols InfoComposants.list
@@ -59,12 +81,14 @@ let toBomCompoList
             let code = c.GetAs<string option> InfoComposants.codeComposant
             let version = c.GetAs<string> InfoComposants.versionComposant
             let q = c.GetAs<float option> InfoComposants.quantiteComposant
+            let ssE = c.GetAs<string> InfoComposants.sousEnsemble
 
             //add the list of parents: actual bomId + its parents
             let ps = bomId.CodeProduit :: parents 
             
             Option.map3 toBomCompo code (Some version) q
             |> Option.map (fun f -> f ps)
+            |> Option.map (fun f -> f ssE )
         )
         |> Series.values   
         |> List.ofSeq
@@ -116,8 +140,8 @@ let byBomIdAllLevel =
             |> Option.map collectComponents
             |> Option.map (fun compos -> 
                 compos 
-                |> List.groupBy(fun compo -> (compo.CodeComposant, compo.Version))
-                |> List.map(fun ((code, version), level) ->
+                |> List.groupBy(fun compo -> (compo.CodeComposant, compo.Version, compo.SousEnsemble))
+                |> List.map(fun ((code, version, ssEnsemble), level) ->
                     {
                         CodeComposant = code
                         Version = version
@@ -129,6 +153,7 @@ let byBomIdAllLevel =
                             level 
                             |> List.collect (fun c -> c.Parents)
                             |> List.distinct
+                        SousEnsemble = ssEnsemble
                     }
                 )) 
                 
