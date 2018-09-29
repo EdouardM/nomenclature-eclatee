@@ -41,15 +41,18 @@ module InfoProduit =
     
 module InfoComposants = 
     module ColTypes = 
-        let [<Literal>] codeComposantT = "string option"
+        let [<Literal>] codeComposantT = "string"
         let [<Literal>] versionComposantT = "string"
-        let [<Literal>] quantiteComposantT = "float option"
-        let [<Literal>] sousEnsembleT = "string option"
+        let [<Literal>] quantiteComposantT = "float"
+        let [<Literal>] sousEnsembleComposantT = "string"
+        let [<Literal>] natureComposantT = "string"
+        
 
     let [<Literal>] codeComposant = "CodeComposant"
     let [<Literal>] versionComposant = "VersionComposant"
     let [<Literal>] quantiteComposant = "QuantiteComposant"
-    let [<Literal>] sousEnsemble = "SousEnsemble"
+    let [<Literal>] sousEnsembleComposant = "SousEnsembleComposant"
+    let [<Literal>] natureComposant = "NatureComposant"
 
     open ColTypes
 
@@ -57,11 +60,11 @@ module InfoComposants =
         codeComposant       + " (" + codeComposantT     + "), "
         + versionComposant  + " (" + versionComposantT  + "), "
         + quantiteComposant + " (" + quantiteComposantT + "), "
-        + sousEnsemble      + " (" + sousEnsembleT      + ")"
+        + sousEnsembleComposant + " (" + sousEnsembleComposantT      + ")"
 
     let list = [
         codeComposant; versionComposant;
-        quantiteComposant; sousEnsemble ]
+        quantiteComposant; sousEnsembleComposant ]
     
 
 type Observation = {
@@ -72,10 +75,10 @@ type Observation = {
     CodeFamilleLog : string
     Nature : string
     Quantite : float
-    CodeComposant: string option
+    CodeComposant: string
     VersionComposant : string
-    QuantiteComposant: float option
-    SousEnsemble : string option
+    QuantiteComposant: float
+    SousEnsembleComposant : string
 }
 
 

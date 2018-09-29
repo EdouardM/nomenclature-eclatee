@@ -34,8 +34,17 @@ module ClassifData =
         
     let df =  Deedle.Frame.ofRecords obs
         
-    let cleanDF : Frame<int,string> = df
+    module Transforms = 
+        let indexByCodeProduit (df: Frame<'R, string>) = 
+           df 
+           |> Frame.groupRowsByString File.codeProduit
+           |> Frame.mapRowKeys fst                        
 
+    open Transforms
+
+    let cleanDF : Frame<string,string> = 
+        df
+        |> indexByCodeProduit
 
 let dfClassif = 
     let cleanDF = ClassifData.cleanDF

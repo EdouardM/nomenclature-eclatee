@@ -38,7 +38,7 @@ module BomData =
             CodeComposant = row.CodeComposant
             VersionComposant = row.VersionComposant
             QuantiteComposant = row.QuantiteComposant
-            SousEnsemble = row.SousEnsemble
+            SousEnsembleComposant = row.SousEnsembleComposant
         }
 
     let obs = 
