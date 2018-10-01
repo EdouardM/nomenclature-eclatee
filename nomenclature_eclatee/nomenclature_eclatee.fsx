@@ -11,24 +11,64 @@ open Classification
 open Deedle 
 open System
 
-type DF = Frame
 
 let dfClassif = dfClassif
 
-let df: Frame<int, string> = 
+let addSousEnsmbleCompo (df: Frame<int, string>) = 
     let ssE = dfClassif.GetColumn File.sousEnsemble
     let ssEnsembleCol = 
-        dfBom.GetColumn<string> InfoProduit.codeProduit
+        df.GetColumn<string> InfoProduit.codeProduit
         |> Series.mapValues(fun code -> 
             Series.lookup code Lookup.Exact ssE
         )
     
-    Frame.addCol File.sousEnsemble ssEnsembleCol dfBom
+    Frame.addCol File.sousEnsemble ssEnsembleCol df
         
+
+let addNatureCompo (df: Frame<int, string>) = 
+    let nature = dfClassif.GetColumn File.nature
+    let natureCol: Series<int, string option> = 
+        df.GetColumn<string> InfoComposants.codeComposant
+        |> Series.mapValues(fun code -> 
+            Series.tryLookup code Lookup.Exact nature
+        )
+    
+    Frame.addCol InfoComposants.natureComposant natureCol df
+        
+let addDesignationCompo (df: Frame<int, string>) = 
+    let des  = dfClassif.GetColumn File.libelle
+    let desCol : Series<int, string option> = 
+        df.GetColumn<string> InfoComposants.codeComposant
+        |> Series.mapValues(fun code -> 
+            Series.tryLookup code Lookup.Exact des
+        )
+    
+    Frame.addCol InfoComposants.designationComposant desCol  df
+
+
+let df : Frame<int,string>  =
+    dfBom
+    |> addSousEnsmbleCompo
+    |> addNatureCompo
+    |> addDesignationCompo
+
+
+df.Columns.Keys
+|> Seq.toList
+|> List.iter (printfn "%s")
+
+df.GetColumn<string option> InfoComposants.designationComposant
+|> Series.values
+|> Seq.take 10
+|> Seq.toList
+|> List.iter (Option.iter (printfn "%s"))
+
+
 type BomId = 
     {
         CodeProduit : string
         Variante : string
+        Nature : string
         Evolution : string
         SousEnsemble: string
     }
@@ -41,18 +81,14 @@ let byBomId =
             CodeProduit = c.GetAs<string>(InfoProduit.codeProduit) 
             Variante = c.GetAs<string>(InfoProduit.versionVariante)
             Evolution = c.GetAs<string>(InfoProduit.evolution)
+            Nature = c.GetAs<string>(InfoProduit.nature)
             SousEnsemble = c.GetAs<string>(File.sousEnsemble)
         }        
     )
     |> Frame.nest
 
 
-byBomId.Get {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = "" }
-
-
-byBomId
-|> Series.observations
-|> Seq.head
+byBomId.Get {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = ""; Nature = "V" }
 
 type Parent = 
     {
@@ -63,16 +99,20 @@ type Parent =
 type BomCompo = {
     CodeComposant : string
     Version : string
+    DesignationComposant : string option
+    NatureComposant : string option
     Quantite: float
     Parents: Parent list
     SousEnsemble: string
     Level : int
     }
 
-let toBomCompo code version quantity parents sousEnsemble level = 
+let toBomCompo code version designation nature quantity parents sousEnsemble level = 
     { 
         CodeComposant = code; 
         Version =  version;
+        DesignationComposant = designation;
+        NatureComposant = nature;
         Quantite = quantity;
         Parents = parents; 
         SousEnsemble = sousEnsemble 
@@ -89,13 +129,15 @@ let toBomCompoList
         |> Frame.mapRowValues(fun c -> 
             let code = c.GetAs<string> InfoComposants.codeComposant
             let version = c.GetAs<string> InfoComposants.versionComposant
+            let nature = c.GetAs<string option> InfoComposants.natureComposant
+            let designation = c.GetAs<string option> InfoComposants.designationComposant
             let q = c.GetAs<float> InfoComposants.quantiteComposant
             let ssE = c.GetAs<string> InfoComposants.sousEnsembleComposant
     
             //add the list of parents: actual bomId + its parents
             let ps = { CodeParent = bomId.CodeProduit; SousEnsemble = bomId.SousEnsemble } :: parents 
             
-            toBomCompo code version q ps ssE level
+            toBomCompo code version designation nature q ps ssE level
         )
         |> Series.values   
         |> List.ofSeq
@@ -105,10 +147,10 @@ let getComponents bomId parents level =
     |> Option.map ( toBomCompoList bomId parents level )
 
 let toBomId (compo: BomCompo) = 
-    let ssE = compo.SousEnsemble
+    let nature = Option.defaultValue "" compo.NatureComposant
     if String.IsNullOrEmpty(compo.Version) 
-    then { CodeProduit = compo.CodeComposant; Variante = "1"; Evolution = "1"; SousEnsemble = ssE}
-    else { CodeProduit = compo.CodeComposant; Variante = compo.Version ; Evolution = "1"; SousEnsemble = ssE}
+    then { CodeProduit = compo.CodeComposant; Variante = "1"; Evolution = "1"; SousEnsemble = compo.SousEnsemble; Nature = nature }
+    else { CodeProduit = compo.CodeComposant; Variante = compo.Version ; Evolution = "1"; SousEnsemble = compo.SousEnsemble; Nature = nature }
 
 let collectComponents (l : BomCompo list) =
     let rec loop (l: BomCompo list) (acc: BomCompo list) = 
@@ -132,7 +174,7 @@ let collectComponents (l : BomCompo list) =
 
 (****************)
 //TEST
-getComponents {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = ""} [] 1
+getComponents {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = ""; Nature = "V"} [] 1
 |> Option.map collectComponents
 |> Option.map Seq.ofList
 (****************)
@@ -156,6 +198,7 @@ let filterComponent (component: string ) =
         |> List.isEmpty
         |> not    
     )
+    |> Series.filter(fun bomId _ -> bomId.Nature = "V"  )
 
 let filterComponents (components: string list) = 
     components
@@ -179,8 +222,11 @@ filterComponents ["52506"; "57829"]
 type BomAllLevels = {
     CodeProduit : string
     Variante: string
+    DesignationProduit : string
     Level : string
     CodeComposant : string
+    DesignationComposant : string
+    NatureComposant :  string
     SousEnsembleComposant : string
     QuantiteCompo : float
     ParentsCompo : string
@@ -198,7 +244,10 @@ let formatCodeCompo code (level: int) =
     blank + code
     
 
+
 let seriesAllLevelsToFrameOutput (series: Series<BomId, BomCompo list>) = 
+    let des  = dfClassif.GetColumn File.libelle
+        
     series
     |> Series.observations
     |> Seq.collect(fun (bomId, compos) -> 
@@ -207,14 +256,19 @@ let seriesAllLevelsToFrameOutput (series: Series<BomId, BomCompo list>) =
             {
                 CodeProduit = bomId.CodeProduit
                 Variante = bomId.Variante
+                DesignationProduit = 
+                                Series.tryLookup bomId.CodeProduit Lookup.Exact des
+                                |> Option.defaultValue ""
+                
                 CodeComposant = formatCodeCompo compo.CodeComposant compo.Level
                 SousEnsembleComposant = compo.SousEnsemble
+                NatureComposant = Option.defaultValue "" compo.NatureComposant
+                DesignationComposant = Option.defaultValue "" compo.DesignationComposant
                 QuantiteCompo = compo.Quantite
                 ParentsCompo = compo.Parents |> formatParents |> String.concat ";"
                 Level = string compo.Level
             }) )
     |> Frame.ofRecords        
-
 
 let saveBomAllLevels (fileName: string) (frameOutput: Frame<int,string>)  = 
     let outputPath = basePath + fileName
@@ -226,5 +280,5 @@ let searchBomCompo (compos: string list) (fileName: string) =
     |> seriesAllLevelsToFrameOutput
     |> saveBomAllLevels fileName
 
-//60768 - 58776 - 82795 - 62529 - 6259 - 62192 - 82337
-searchBomCompo ["60768"] "output.csv"
+//82188 - 82289
+searchBomCompo ["82188"; "82294"] "output.csv"

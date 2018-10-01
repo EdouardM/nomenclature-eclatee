@@ -21,8 +21,8 @@ module File =
     let [<Literal>] schema = 
         codeProduit         + " (" + codeProduitT       + "), "
         + libelle           + " (" + libelleT           + "), "
-        + codeFamilleLog    + " (" + codeFamilleLogT    + "), "
         + nature            + " (" + natureT            + "), "
+        + codeFamilleLog    + " (" + codeFamilleLogT    + "), "
         + sousEnsemble      + " (" + sousEnsembleT      + ")"
     
     let list = [

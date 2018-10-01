@@ -13,9 +13,9 @@ let [<Literal>] basePath = __SOURCE_DIRECTORY__ + @"../../data/"
 
 module ClassifData =
     open Deedle.Frame
-    let [<Literal>] path = basePath + "classification_produits_actifs.csv"    
+    let [<Literal>] path = basePath + "classification_produits.csv"    
     
-    type ClassifData = CsvProvider<path, Schema= Classification.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
+    type ClassifData = CsvProvider<path, Schema= Classification.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR" >
     type ClassifRow = ClassifData.Row
     
     let csvClassif = ClassifData.Load(path)

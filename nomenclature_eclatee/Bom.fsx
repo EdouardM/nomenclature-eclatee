@@ -46,6 +46,7 @@ module InfoComposants =
         let [<Literal>] quantiteComposantT = "float"
         let [<Literal>] sousEnsembleComposantT = "string"
         let [<Literal>] natureComposantT = "string"
+        let [<Literal>] designationComposantT = "string"
         
 
     let [<Literal>] codeComposant = "CodeComposant"
@@ -53,6 +54,7 @@ module InfoComposants =
     let [<Literal>] quantiteComposant = "QuantiteComposant"
     let [<Literal>] sousEnsembleComposant = "SousEnsembleComposant"
     let [<Literal>] natureComposant = "NatureComposant"
+    let [<Literal>] designationComposant = "DesignationComposant"
 
     open ColTypes
 
@@ -64,7 +66,8 @@ module InfoComposants =
 
     let list = [
         codeComposant; versionComposant;
-        quantiteComposant; sousEnsembleComposant ]
+        quantiteComposant; sousEnsembleComposant; 
+        natureComposant; designationComposant ]
     
 
 type Observation = {
