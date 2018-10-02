@@ -1,11 +1,14 @@
 #r "../packages/Deedle/lib/net40/Deedle.dll"
 #r "../packages/FSharp.Data/lib/net45/FSharp.Data.dll"
 #load "./Bom.fsx"
-
+#load "./DFClassif.fsx"
 
 open System
 open FSharp.Data
 open Deedle
+
+open DFClassif
+open Classification
 
 open Bom
 
@@ -52,16 +55,48 @@ module BomData =
         
 
     module Transforms = 
-        let fillMissingWithBlank (colname: string) (df: Frame<'R, string>) = 
-            let newSeries = 
-                df
-                |> Frame.getCol colname
-                |> Series.fillMissingWith ""
-            df |> Frame.replaceCol colname newSeries                        
+        let dfClassif = dfClassif
 
+        let addSousEnsmbleProduit (df: Frame<int, string>) = 
+            let ssE = dfClassif.GetColumn File.sousEnsemble
+            let ssEnsembleCol = 
+                df.GetColumn<string> InfoProduit.codeProduit
+                |> Series.mapValues(fun code -> 
+                    Series.lookup code Lookup.Exact ssE
+                )
+            
+            Frame.addCol File.sousEnsemble ssEnsembleCol df
+                
+
+        let addNatureCompo (df: Frame<int, string>) = 
+            let nature = dfClassif.GetColumn File.nature
+            let natureCol: Series<int, string option> = 
+                df.GetColumn<string> InfoComposants.codeComposant
+                |> Series.mapValues(fun code -> 
+                    Series.tryLookup code Lookup.Exact nature
+                )
+            
+            Frame.addCol InfoComposants.natureComposant natureCol df
+                
+        let addDesignationCompo (df: Frame<int, string>) = 
+            let des  = dfClassif.GetColumn File.libelle
+            let desCol : Series<int, string option> = 
+                df.GetColumn<string> InfoComposants.codeComposant
+                |> Series.mapValues(fun code -> 
+                    Series.tryLookup code Lookup.Exact des
+                )
+            
+            Frame.addCol InfoComposants.designationComposant desCol  df
+
+        let dfComplete : Frame<int,string>  =
+            df
+            |> addSousEnsmbleProduit
+            |> addNatureCompo
+            |> addDesignationCompo
+        
     open Transforms
 
-    let cleanDF : Frame<int,string> = df
+    let cleanDF : Frame<int,string> = dfComplete
 
 
 let dfBom = 

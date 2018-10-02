@@ -4,64 +4,12 @@
 #load "./Classification.fsx"
 
 open DFBom
-open DFClassif
 open Bom
 open BomData
 open Classification
 open Deedle 
 open System
 
-
-let dfClassif = dfClassif
-
-let addSousEnsmbleCompo (df: Frame<int, string>) = 
-    let ssE = dfClassif.GetColumn File.sousEnsemble
-    let ssEnsembleCol = 
-        df.GetColumn<string> InfoProduit.codeProduit
-        |> Series.mapValues(fun code -> 
-            Series.lookup code Lookup.Exact ssE
-        )
-    
-    Frame.addCol File.sousEnsemble ssEnsembleCol df
-        
-
-let addNatureCompo (df: Frame<int, string>) = 
-    let nature = dfClassif.GetColumn File.nature
-    let natureCol: Series<int, string option> = 
-        df.GetColumn<string> InfoComposants.codeComposant
-        |> Series.mapValues(fun code -> 
-            Series.tryLookup code Lookup.Exact nature
-        )
-    
-    Frame.addCol InfoComposants.natureComposant natureCol df
-        
-let addDesignationCompo (df: Frame<int, string>) = 
-    let des  = dfClassif.GetColumn File.libelle
-    let desCol : Series<int, string option> = 
-        df.GetColumn<string> InfoComposants.codeComposant
-        |> Series.mapValues(fun code -> 
-            Series.tryLookup code Lookup.Exact des
-        )
-    
-    Frame.addCol InfoComposants.designationComposant desCol  df
-
-
-let df : Frame<int,string>  =
-    dfBom
-    |> addSousEnsmbleCompo
-    |> addNatureCompo
-    |> addDesignationCompo
-
-
-df.Columns.Keys
-|> Seq.toList
-|> List.iter (printfn "%s")
-
-df.GetColumn<string option> InfoComposants.designationComposant
-|> Series.values
-|> Seq.take 10
-|> Seq.toList
-|> List.iter (Option.iter (printfn "%s"))
 
 
 type BomId = 
@@ -73,9 +21,11 @@ type BomId =
         SousEnsemble: string
     }
 
+
+
 //Regroupement des lignes par code produit:
 let byBomId =
-    df
+    dfBom
     |> Frame.groupRowsUsing (fun _ c -> 
         { 
             CodeProduit = c.GetAs<string>(InfoProduit.codeProduit) 
@@ -87,8 +37,6 @@ let byBomId =
     )
     |> Frame.nest
 
-
-byBomId.Get {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = ""; Nature = "V" }
 
 type Parent = 
     {
@@ -172,14 +120,6 @@ let collectComponents (l : BomCompo list) =
             loop cs acc'             
     loop l []  
 
-(****************)
-//TEST
-getComponents {CodeProduit = "25708"; Variante = "1"; Evolution = "1"; SousEnsemble = ""; Nature = "V"} [] 1
-|> Option.map collectComponents
-|> Option.map Seq.ofList
-(****************)
-
-
 let byBomIdAllLevel = 
     byBomId
     |> Series.keys
@@ -188,49 +128,6 @@ let byBomIdAllLevel =
             |> Option.map collectComponents
             |> Option.map (fun cs -> bomId, cs ))
     |> series
-
-//Filter to the bom containing the components: 
-let filterComponent (component: string ) = 
-    byBomIdAllLevel
-    |> Series.filterValues(fun compos -> 
-        compos 
-        |> List.filter(fun compo -> compo.CodeComposant = component)
-        |> List.isEmpty
-        |> not    
-    )
-    |> Series.filter(fun bomId _ -> bomId.Nature = "V"  )
-
-let filterComponents (components: string list) = 
-    components
-    |> List.map filterComponent
-    |> List.reduce(fun s1 s2 -> 
-        Series.mergeUsing UnionBehavior.PreferLeft s1 s2
-    ) 
-
-
-(****************)
-//TEST   
-
-filterComponents ["52506"; "57829"]
-|> Series.keys
-|> Seq.take 10
-|> Seq.toList
-|> List.map(fun bom -> bom.CodeProduit )
-
-(****************)
-
-type BomCompoOutput = {
-    CodeProduit : string
-    Variante: string
-    DesignationProduit : string
-    Level : string
-    CodeComposant : string
-    DesignationComposant : string
-    NatureComposant :  string
-    SousEnsembleComposant : string
-    QuantiteCompo : float
-    ParentsCompo : string
-}
 
 let formatParents (parents: Parent list) = 
     parents
@@ -244,125 +141,6 @@ let formatCodeCompo code (level: int) =
     blank + code
     
 
-
-let seriesAllLevelsToFrameOutput (series: Series<BomId, BomCompo list>) = 
-    let des  = dfClassif.GetColumn File.libelle
-        
-    series
-    |> Series.observations
-    |> Seq.collect(fun (bomId, compos) -> 
-        compos
-        |> List.map(fun compo -> 
-            {
-                CodeProduit = bomId.CodeProduit
-                Variante = bomId.Variante
-                DesignationProduit = 
-                                Series.tryLookup bomId.CodeProduit Lookup.Exact des
-                                |> Option.defaultValue ""
-                
-                CodeComposant = formatCodeCompo compo.CodeComposant compo.Level
-                SousEnsembleComposant = compo.SousEnsemble
-                NatureComposant = Option.defaultValue "" compo.NatureComposant
-                DesignationComposant = Option.defaultValue "" compo.DesignationComposant
-                QuantiteCompo = compo.Quantite
-                ParentsCompo = compo.Parents |> formatParents |> String.concat ";"
-                Level = string compo.Level
-            }) )
-    |> Frame.ofRecords        
-
 let frameToCsv (fileName: string) (frameOutput: Frame<int,string>)  = 
     let outputPath = basePath + fileName
     frameOutput.SaveCsv(outputPath, separator=';')
-    
-
-let searchBomCompo (compos: string list) (fileName: string) = 
-    filterComponents compos
-    |> seriesAllLevelsToFrameOutput
-    |> frameToCsv fileName
-
-//82188 - 82289
-searchBomCompo ["82188"; "82294"] "output.csv"
-
-
-let filterProduct (product: string) = 
-    byBomIdAllLevel
-    |> Series.filter(fun bomId _ -> 
-        bomId.CodeProduit = product
-    )
-
-let filterProducts (products: string list) =
-    products
-    |> List.map filterProduct
-    |> List.reduce(fun s1 s2 -> 
-        Series.mergeUsing UnionBehavior.PreferLeft s1 s2
-    ) 
-
-
-type AggregatedBomCompo = {
-    CodeComposant : string
-    DesignationComposant : string option
-    NatureComposant : string option
-    Quantite: float
-    SousEnsemble: string
-}
-
-let aggregateCompo (series: Series<BomId, BomCompo list>) = 
-    series
-    |> Series.mapValues(fun compos -> 
-        compos 
-        |> List.groupBy(fun compo -> (compo.CodeComposant, compo.Version, compo.DesignationComposant, compo.NatureComposant, compo.SousEnsemble))
-        |> List.map(fun ((code, version, designation, nature, ssE), level) ->
-            {
-                CodeComposant = code
-                DesignationComposant = designation
-                NatureComposant = nature
-                Quantite =          
-                    level
-                    |> List.map (fun c -> c.Quantite)
-                    |> List.reduce (+) 
-                SousEnsemble = ssE                
-            }
-        )
-    )
-    
-type AggregatedBomCompoOutput = {
-    CodeProduit : string
-    Variante: string
-    DesignationProduit : string
-    CodeComposant : string
-    DesignationComposant : string
-    NatureComposant : string
-    QuantiteCompo : float
-    SousEnsembleComposant: string
-}
-
-let toAggregatedBomCompoOutputFrame (series: Series<BomId, AggregatedBomCompo list>) = 
-    let des  = dfClassif.GetColumn File.libelle
-        
-    series
-    |> Series.observations
-    |> Seq.collect(fun (bomId, compos) -> 
-        compos
-        |> List.map(fun compo -> 
-            {
-                CodeProduit = bomId.CodeProduit
-                Variante = bomId.Variante
-                DesignationProduit = 
-                                Series.tryLookup bomId.CodeProduit Lookup.Exact des
-                                |> Option.defaultValue ""
-                
-                CodeComposant = compo.CodeComposant
-                SousEnsembleComposant = compo.SousEnsemble
-                NatureComposant = Option.defaultValue "" compo.NatureComposant
-                DesignationComposant = Option.defaultValue "" compo.DesignationComposant
-                QuantiteCompo = compo.Quantite
-            }) )
-    |> Frame.ofRecords        
-
-let aggregateBomCompo (products: string list) (fileName: string) = 
-    filterProducts products
-    |> aggregateCompo
-    |> toAggregatedBomCompoOutputFrame
-    |> frameToCsv fileName
-
-aggregateBomCompo  ["23905"; "24912"] "output2.csv"
