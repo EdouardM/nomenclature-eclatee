@@ -1,7 +1,7 @@
 #r "../packages/Deedle/lib/net40/Deedle.dll"
 #r "../packages/FSharp.Data/lib/net45/FSharp.Data.dll"
 #load "./Classification.fsx"
-
+#load "./Types.fs"
 
 open System
 open FSharp.Data
@@ -41,7 +41,7 @@ module ClassifData =
            |> Frame.mapRowKeys fst                        
 
     open Transforms
-
+    
     let cleanDF : Frame<string,string> = 
         df
         |> indexByCodeProduit

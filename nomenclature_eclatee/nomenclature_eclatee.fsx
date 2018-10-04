@@ -3,24 +3,14 @@
 #load "./DFClassif.fsx"
 #load "./Classification.fsx"
 
+
 open DFBom
 open Bom
 open BomData
 open Classification
 open Deedle 
 open System
-
-
-
-type BomId = 
-    {
-        CodeProduit : string
-        Variante : string
-        Nature : string
-        Evolution : string
-        SousEnsemble: string
-    }
-
+open DFClassif
 
 
 //Regroupement des lignes par code produit:
@@ -28,64 +18,36 @@ let byBomId =
     dfBom
     |> Frame.groupRowsUsing (fun _ c -> 
         { 
-            CodeProduit = c.GetAs<string>(InfoProduit.codeProduit) 
-            Variante = c.GetAs<string>(InfoProduit.versionVariante)
-            Evolution = c.GetAs<string>(InfoProduit.evolution)
+            CodeProduit = c.GetAs<string>(InfoProduit.codeProduit)
             Nature = c.GetAs<string>(InfoProduit.nature)
-            SousEnsemble = c.GetAs<string>(File.sousEnsemble)
         }        
     )
     |> Frame.nest
 
-
-type Parent = 
-    {
-        CodeParent : string
-        SousEnsemble : string
-    }
-
-type BomCompo = {
-    CodeComposant : string
-    Version : string
-    DesignationComposant : string option
-    NatureComposant : string option
-    Quantite: float
-    Parents: Parent list
-    SousEnsemble: string
-    Level : int
-    }
-
-let toBomCompo code version designation nature quantity parents sousEnsemble level = 
-    { 
-        CodeComposant = code; 
-        Version =  version;
-        DesignationComposant = designation;
-        NatureComposant = nature;
-        Quantite = quantity;
-        Parents = parents; 
-        SousEnsemble = sousEnsemble 
-        Level = level
-    }
 
 let toBomCompoList 
     (bomId: BomId) 
     (parents: Parent list) 
     (level: int)
     (df: Deedle.Frame<'R, string>) = 
+        let ssEs = dfClassif.GetColumn<string> File.sousEnsemble
         df        
         |> Frame.sliceCols InfoComposants.list
         |> Frame.mapRowValues(fun c -> 
             let code = c.GetAs<string> InfoComposants.codeComposant
-            let version = c.GetAs<string> InfoComposants.versionComposant
             let nature = c.GetAs<string option> InfoComposants.natureComposant
             let designation = c.GetAs<string option> InfoComposants.designationComposant
             let q = c.GetAs<float> InfoComposants.quantiteComposant
             let ssE = c.GetAs<string> InfoComposants.sousEnsembleComposant
     
+            let ssE = 
+                Series.tryLookup bomId.CodeProduit Lookup.Exact ssEs 
+                |> Option.defaultValue ""
+
             //add the list of parents: actual bomId + its parents
-            let ps = { CodeParent = bomId.CodeProduit; SousEnsemble = bomId.SousEnsemble } :: parents 
+            let ps = { CodeParent = bomId.CodeProduit ; SousEnsemble = ssE } :: parents 
             
-            toBomCompo code version designation nature q ps ssE level
+            BomCompo.create code designation nature q ps ssE level
         )
         |> Series.values   
         |> List.ofSeq
@@ -96,17 +58,16 @@ let getComponents bomId parents level =
 
 let toBomId (compo: BomCompo) = 
     let nature = Option.defaultValue "" compo.NatureComposant
-    if String.IsNullOrEmpty(compo.Version) 
-    then { CodeProduit = compo.CodeComposant; Variante = "1"; Evolution = "1"; SousEnsemble = compo.SousEnsemble; Nature = nature }
-    else { CodeProduit = compo.CodeComposant; Variante = compo.Version ; Evolution = "1"; SousEnsemble = compo.SousEnsemble; Nature = nature }
+    { CodeProduit = compo.CodeComposant; Nature = nature }
+   
 
 let collectComponents (l : BomCompo list) =
     let rec loop (l: BomCompo list) (acc: BomCompo list) = 
         match l with
         | [] -> acc
         | c :: cs -> 
-            let bomId = toBomId c
-            let compos = getComponents bomId (c.Parents) (c.Level + 1)
+            let bomId =  toBomId c
+            let compos = getComponents bomId (c.Parents) (c.Level +  1)
             let newAcc = 
                 match compos with
                 | None -> [c]
@@ -132,11 +93,12 @@ let byBomIdAllLevel =
 let formatParents (parents: Parent list) = 
     parents
     |> List.map (fun p -> 
+        let parent = p.CodeParent
         match p.SousEnsemble with
-        | "" -> p.CodeParent
-        | ssE -> p.CodeParent + " (" + p.SousEnsemble + ")")
+        | "" -> parent
+        | ssE -> parent + " (" + ssE + ")")
 
-let formatCodeCompo code (level: int) = 
+let formatCodeCompo (code: string) (level: int) = 
     let blank = String.init (level - 1) (fun _ -> "    " )
     blank + code
     
