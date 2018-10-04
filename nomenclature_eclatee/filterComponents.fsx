@@ -13,12 +13,13 @@ open DFClassif
 let filterComponent (component: string ) = 
     byBomIdAllLevel
     |> Series.filterValues(fun compos -> 
+        let code = Code component
         compos 
-        |> List.filter(fun compo -> compo.CodeComposant = component)
+        |> List.filter(fun compo -> compo.CodeComposant = code)
         |> List.isEmpty
         |> not    
     )
-    |> Series.filter(fun bomId _ -> bomId.Nature = "V"  )
+    |> Series.filter(fun bomId _ -> bomId.Nature = Nature "V"  )
 
 let filterComponents (components: string list) = 
     components
@@ -60,18 +61,22 @@ let seriesAllLevelsToFrameOutput (series: Series<BomId, BomCompo list>) =
         |> List.map(fun compo ->
              
             {
-                CodeProduit = bomId.CodeProduit
+                CodeProduit = bomId.CodeProduit.Value
                 DesignationProduit = 
                                 Series.tryLookup bomId.CodeProduit Lookup.Exact des
                                 |> Option.defaultValue ""
                 
-                CodeComposant = formatCodeCompo compo.CodeComposant compo.Level
-                SousEnsembleComposant = compo.SousEnsemble
-                NatureComposant = Option.defaultValue "" compo.NatureComposant
-                DesignationComposant = Option.defaultValue "" compo.DesignationComposant
+                CodeComposant = compo.CodeComposant.Value
+                SousEnsembleComposant = compo.SousEnsemble.Value
+                NatureComposant = 
+                    let n = Option.defaultValue (Nature "") compo.NatureComposant
+                    n.Value
+                DesignationComposant = 
+                    let d = Option.defaultValue (Designation "") compo.DesignationComposant
+                    d.Value
                 QuantiteCompo = compo.Quantite
                 ParentsCompo = compo.Parents |> formatParents |> String.concat ";"
-                Level = string compo.Level
+                Level = string compo.Level.Value
             }) )
     |> Frame.ofRecords        
 

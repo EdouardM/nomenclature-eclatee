@@ -62,7 +62,8 @@ module BomData =
             let ssEnsembleCol = 
                 df.GetColumn<string> InfoProduit.codeProduit
                 |> Series.mapValues(fun c -> 
-                    Series.lookup c Lookup.Exact ssE
+                    let code = Code c
+                    Series.lookup code Lookup.Exact ssE
                 )
             
             Frame.addCol File.sousEnsemble ssEnsembleCol df
@@ -73,7 +74,8 @@ module BomData =
             let natureCol: Series<int, string option> = 
                 df.GetColumn<string> InfoComposants.codeComposant
                 |> Series.mapValues(fun c ->
-                    Series.tryLookup c Lookup.Exact nature
+                    let code = Code c
+                    Series.tryLookup code Lookup.Exact nature
                 )
             
             Frame.addCol InfoComposants.natureComposant natureCol df
@@ -83,7 +85,8 @@ module BomData =
             let desCol : Series<int, string option> = 
                 df.GetColumn<string> InfoComposants.codeComposant
                 |> Series.mapValues(fun c -> 
-                    Series.tryLookup c Lookup.Exact des
+                    let code = Code c
+                    Series.tryLookup code Lookup.Exact des
                 )
             
             Frame.addCol InfoComposants.designationComposant desCol  df

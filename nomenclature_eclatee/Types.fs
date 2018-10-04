@@ -42,24 +42,24 @@ module Types
     
     type BomId = 
         {
-            CodeProduit : string
-            Nature : string
+            CodeProduit : Code
+            Nature : Nature
         }
 
     type Parent = 
         {
-            CodeParent : string
-            SousEnsemble : string
+            CodeParent : Code
+            SousEnsemble : SousEnsemble
         }
 
     type BomCompo = {
-        CodeComposant : string
-        DesignationComposant : string option
-        NatureComposant : string option
+        CodeComposant : Code
+        DesignationComposant : Designation option
+        NatureComposant : Nature option
         Quantite: float
         Parents: Parent list
-        SousEnsemble: string
-        Level : int
+        SousEnsemble: SousEnsemble
+        Level : Level
         }
         with
             static member create code designation nature quantity parents sousEnsemble level = 

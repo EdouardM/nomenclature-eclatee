@@ -42,9 +42,10 @@ module ClassifData =
 
     open Transforms
     
-    let cleanDF : Frame<string,string> = 
+    let cleanDF : Frame<Code,string> = 
         df
         |> indexByCodeProduit
+        |> Frame.mapRowKeys Code
 
 let dfClassif = 
     let cleanDF = ClassifData.cleanDF

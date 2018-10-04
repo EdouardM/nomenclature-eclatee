@@ -18,8 +18,8 @@ let byBomId =
     dfBom
     |> Frame.groupRowsUsing (fun _ c -> 
         { 
-            CodeProduit = c.GetAs<string>(InfoProduit.codeProduit)
-            Nature = c.GetAs<string>(InfoProduit.nature)
+            CodeProduit = c.GetAs<string>(InfoProduit.codeProduit) |> Code
+            Nature = c.GetAs<string>(InfoProduit.nature) |> Nature
         }        
     )
     |> Frame.nest
@@ -28,21 +28,22 @@ let byBomId =
 let toBomCompoList 
     (bomId: BomId) 
     (parents: Parent list) 
-    (level: int)
+    (level: Level)
     (df: Deedle.Frame<'R, string>) = 
         let ssEs = dfClassif.GetColumn<string> File.sousEnsemble
         df        
         |> Frame.sliceCols InfoComposants.list
         |> Frame.mapRowValues(fun c -> 
-            let code = c.GetAs<string> InfoComposants.codeComposant
-            let nature = c.GetAs<string option> InfoComposants.natureComposant
-            let designation = c.GetAs<string option> InfoComposants.designationComposant
+            let code = c.GetAs<string> InfoComposants.codeComposant |> Code
+            let nature = c.GetAs<string option> InfoComposants.natureComposant |> Option.map Nature
+            let designation = c.GetAs<string option> InfoComposants.designationComposant |> Option.map Designation
             let q = c.GetAs<float> InfoComposants.quantiteComposant
-            let ssE = c.GetAs<string> InfoComposants.sousEnsembleComposant
+            let ssE = c.GetAs<string> InfoComposants.sousEnsembleComposant |> SousEnsemble
     
             let ssE = 
                 Series.tryLookup bomId.CodeProduit Lookup.Exact ssEs 
                 |> Option.defaultValue ""
+                |> SousEnsemble
 
             //add the list of parents: actual bomId + its parents
             let ps = { CodeParent = bomId.CodeProduit ; SousEnsemble = ssE } :: parents 
@@ -57,7 +58,7 @@ let getComponents bomId parents level =
     |> Option.map ( toBomCompoList bomId parents level )
 
 let toBomId (compo: BomCompo) = 
-    let nature = Option.defaultValue "" compo.NatureComposant
+    let nature = Option.defaultValue (Nature "") compo.NatureComposant
     { CodeProduit = compo.CodeComposant; Nature = nature }
    
 
@@ -67,7 +68,7 @@ let collectComponents (l : BomCompo list) =
         | [] -> acc
         | c :: cs -> 
             let bomId =  toBomId c
-            let compos = getComponents bomId (c.Parents) (c.Level +  1)
+            let compos = getComponents bomId (c.Parents) (c.Level.add 1)
             let newAcc = 
                 match compos with
                 | None -> [c]
@@ -85,7 +86,7 @@ let byBomIdAllLevel =
     byBomId
     |> Series.keys
     |> Seq.choose(fun bomId -> 
-            getComponents bomId [] 1
+            getComponents bomId [] (Level 1)
             |> Option.map collectComponents
             |> Option.map (fun cs -> bomId, cs ))
     |> series
@@ -93,8 +94,8 @@ let byBomIdAllLevel =
 let formatParents (parents: Parent list) = 
     parents
     |> List.map (fun p -> 
-        let parent = p.CodeParent
-        match p.SousEnsemble with
+        let parent = p.CodeParent.Value
+        match p.SousEnsemble.Value with
         | "" -> parent
         | ssE -> parent + " (" + ssE + ")")
 

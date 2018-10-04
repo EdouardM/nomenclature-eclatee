@@ -5,17 +5,17 @@
 open Nomenclature_eclatee
 open Deedle
 
-byBomId.Get {CodeProduit = "13437"; Variante = "2"; Evolution = "1"; SousEnsemble = ""; Nature = "V" }
+byBomId.Get {CodeProduit = Code "13437"; Nature = Nature "V" }
 
 
 (****************)
 //TEST
-getComponents {CodeProduit = "13437"; Variante = "2"; Evolution = "1"; SousEnsemble = ""; Nature = "V"} [] 1
+getComponents {CodeProduit = Code "13437"; Nature = Nature "V"} [] (Level 1)
 |> Option.map collectComponents
 |> Option.map Seq.ofList
 (****************)
 
 
 byBomIdAllLevel
-|> Series.tryLookup {CodeProduit = "13437"; Variante = "2"; Evolution = "1"; SousEnsemble = ""; Nature = "V"} Lookup.Exact
-|> Option.map (List.filter (fun compo -> compo.CodeComposant = "120630"))
+|> Series.tryLookup {CodeProduit = Code "13437"; Nature = Nature "V"} Lookup.Exact
+|> Option.map (List.filter (fun compo -> compo.CodeComposant.Value = "120630"))
