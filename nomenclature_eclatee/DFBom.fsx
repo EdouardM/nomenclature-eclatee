@@ -16,30 +16,31 @@ let [<Literal>] basePath = __SOURCE_DIRECTORY__ + @"../../data/"
 
 module BomData =
     open Deedle.Frame
-    let [<Literal>] path = basePath + "nomenclatures.csv"    
+    
     let [<Literal>] codeVentePath = basePath + "nomenclatures_codes_ventes_actifs.csv"
     let [<Literal>] sf1Path = basePath + "nomenclatures_SF1_actifs.csv"
     let [<Literal>] sf2Path = basePath + "nomenclatures_SF2_actifs.csv"
 
     type BomData = CsvProvider<sf1Path, Schema= Bom.CsvFile.schema,HasHeaders=true,Separators=";",Culture="fr-FR">
     type BomRow = BomData.Row
-    
+
     let csvBomCV = BomData.Load(codeVentePath)
     let csvBomSF1 = BomData.Load(sf1Path)
     let csvBomSF2 = BomData.Load(sf2Path)
 
 
-    let toObs (row: BomRow) = 
+    let toObs (row: BomRow): Observation = 
         {
             CodeProduit = row.CodeProduit
-            VersionVariante = row.VersionVariante
+            Designation = row.Designation
+            Variante = row.Variante
             Evolution = row.Evolution
-            Libelle = row.Libelle
             CodeFamilleLog = row.CodeFamilleLog
             Nature = row.Nature
             Quantite = row.Quantite
             CodeComposant = row.CodeComposant
-            VersionComposant = row.VersionComposant
+            DesignationComposant = row.DesignationComposant
+            VarianteComposant = row.VarianteComposant
             QuantiteComposant = row.QuantiteComposant
             SousEnsembleComposant = row.SousEnsembleComposant
         }
@@ -80,22 +81,10 @@ module BomData =
             
             Frame.addCol InfoComposants.natureComposant natureCol df
                 
-        let addDesignationCompo (df: Frame<int, string>) = 
-            let des  = dfClassif.GetColumn File.libelle
-            let desCol : Series<int, string option> = 
-                df.GetColumn<string> InfoComposants.codeComposant
-                |> Series.mapValues(fun c -> 
-                    let code = Code c
-                    Series.tryLookup code Lookup.Exact des
-                )
-            
-            Frame.addCol InfoComposants.designationComposant desCol  df
-
         let dfComplete : Frame<int,string>  =
             df
             |> addSousEnsmbleProduit
             |> addNatureCompo
-            |> addDesignationCompo
         
     open Transforms
 

@@ -3,7 +3,6 @@
 #load "./DFClassif.fsx"
 #load "./Classification.fsx"
 
-
 open DFBom
 open Bom
 open BomData
@@ -13,7 +12,7 @@ open System
 open DFClassif
 
 
-//Regroupement des lignes par code produit:
+//Regroupement des lignes par code produit >> mettre dans dfbom
 let byBomId =
     dfBom
     |> Frame.groupRowsUsing (fun _ c -> 
@@ -36,7 +35,7 @@ let toBomCompoList
         |> Frame.mapRowValues(fun c -> 
             let code = c.GetAs<string> InfoComposants.codeComposant |> Code
             let nature = c.GetAs<string option> InfoComposants.natureComposant |> Option.map Nature
-            let designation = c.GetAs<string option> InfoComposants.designationComposant |> Option.map Designation
+            let designation = c.GetAs<string> InfoComposants.designationComposant |> Designation
             let q = c.GetAs<float> InfoComposants.quantiteComposant
             let ssE = c.GetAs<string> InfoComposants.sousEnsembleComposant |> SousEnsemble
     

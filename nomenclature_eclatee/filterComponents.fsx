@@ -35,7 +35,7 @@ filterComponents ["82294"]
 |> Series.keys
 |> Seq.take 10
 |> Seq.toList
-//|> List.map(fun bom -> bom.CodeProduit )
+|> List.map(fun bom -> bom.CodeProduit )
 
 (****************)
 
@@ -71,9 +71,7 @@ let seriesAllLevelsToFrameOutput (series: Series<BomId, BomCompo list>) =
                 NatureComposant = 
                     let n = Option.defaultValue (Nature "") compo.NatureComposant
                     n.Value
-                DesignationComposant = 
-                    let d = Option.defaultValue (Designation "") compo.DesignationComposant
-                    d.Value
+                DesignationComposant = compo.DesignationComposant.Value
                 QuantiteCompo = compo.Quantite
                 ParentsCompo = compo.Parents |> formatParents |> String.concat ";"
                 Level = string compo.Level.Value
@@ -88,4 +86,7 @@ let searchBomCompo (compos: string list) (fileName: string) =
 //82188 - 82294
 searchBomCompo ["150549";"150550";"120630";"120628";"120642";"120629";"121332";"121400";"121110";"121111";"152819";"152820";"152822";"152823";"152825";"152826";"152828";"152829";"153008";"153009";"153119";"153121";"153120";"123297";"123293";"123258";"123296";"123294";"153224";"153234";"155427";"153223";"153233";"155429";"155430";"155431";"155432";"155433";"155434";"155435";"155436";"155437";"155438";"155439";"155440";"155441";"155442";"155443";"152895";"152890";"152884";"152878";"153012";"155160";"155161"] "output.csv"
 
+//capteur
 searchBomCompo ["82294"; "82188"] "output.csv"
+//Porte éléments
+searchBomCompo ["155315";"155312";"155228";"155230";"155224";"155224";"155226";"155228"] "output2.csv"

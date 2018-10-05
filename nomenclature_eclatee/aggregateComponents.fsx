@@ -6,11 +6,12 @@ open Deedle
 open System
 open Nomenclature_eclatee
 open DFClassif
+open Classification
 
 let filterProduct (product: string) = 
     byBomIdAllLevel
     |> Series.filter(fun bomId _ -> 
-        bomId.CodeProduit = product
+        bomId.CodeProduit.Value = product
     )
 
 let filterProducts (products: string list) =
@@ -23,8 +24,8 @@ let filterProducts (products: string list) =
 
 type AggregatedBomCompo = {
     CodeComposant : string
-    DesignationComposant : string option
-    NatureComposant : string option
+    DesignationComposant : string
+    NatureComposant : string
     Quantite: float
     SousEnsemble: string
 }
@@ -33,24 +34,23 @@ let aggregateCompo (series: Series<BomId, BomCompo list>) =
     series
     |> Series.mapValues(fun compos -> 
         compos 
-        |> List.groupBy(fun compo -> (compo.CodeComposant, compo.Version, compo.DesignationComposant, compo.NatureComposant, compo.SousEnsemble))
-        |> List.map(fun ((code, version, designation, nature, ssE), level) ->
+        |> List.groupBy(fun compo -> (compo.CodeComposant,compo.DesignationComposant, compo.NatureComposant, compo.SousEnsemble))
+        |> List.map(fun ((code,designation, nature, ssE), level) ->
             {
-                CodeComposant = code
-                DesignationComposant = designation
-                NatureComposant = nature
+                CodeComposant = code.Value
+                DesignationComposant = designation.Value
+                NatureComposant = Option.defaultValue (Nature "") nature |> (fun n -> n.Value)
                 Quantite =          
                     level
                     |> List.map (fun c -> c.Quantite)
                     |> List.reduce (+) 
-                SousEnsemble = ssE                
+                SousEnsemble = ssE.Value                
             }
         )
     )
     
 type AggregatedBomCompoOutput = {
     CodeProduit : string
-    Variante: string
     DesignationProduit : string
     CodeComposant : string
     DesignationComposant : string
@@ -68,16 +68,15 @@ let toAggregatedBomCompoOutputFrame (series: Series<BomId, AggregatedBomCompo li
         compos
         |> List.map(fun compo -> 
             {
-                CodeProduit = bomId.CodeProduit
-                Variante = bomId.Variante
+                CodeProduit = bomId.CodeProduit.Value
                 DesignationProduit = 
                                 Series.tryLookup bomId.CodeProduit Lookup.Exact des
                                 |> Option.defaultValue ""
                 
                 CodeComposant = compo.CodeComposant
                 SousEnsembleComposant = compo.SousEnsemble
-                NatureComposant = Option.defaultValue "" compo.NatureComposant
-                DesignationComposant = Option.defaultValue "" compo.DesignationComposant
+                NatureComposant = compo.NatureComposant
+                DesignationComposant = compo.DesignationComposant
                 QuantiteCompo = compo.Quantite
             }) )
     |> Frame.ofRecords        
@@ -88,4 +87,4 @@ let aggregateBomCompo (products: string list) (fileName: string) =
     |> toAggregatedBomCompoOutputFrame
     |> frameToCsv fileName
 
-aggregateBomCompo  ["23905"; "24912"] "output2.csv"
+aggregateBomCompo  ["155315";"155312";"155228";"155230";"155224";"155224";"155226";"155228"] "output2.csv"

@@ -54,7 +54,7 @@ module Types
 
     type BomCompo = {
         CodeComposant : Code
-        DesignationComposant : Designation option
+        DesignationComposant : Designation
         NatureComposant : Nature option
         Quantite: float
         Parents: Parent list
