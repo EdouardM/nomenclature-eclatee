@@ -21,7 +21,6 @@ let filterProducts (products: string list) =
         Series.mergeUsing UnionBehavior.PreferLeft s1 s2
     ) 
 
-
 type AggregatedBomCompo = {
     CodeComposant : string
     DesignationComposant : string
@@ -32,6 +31,7 @@ type AggregatedBomCompo = {
 
 let aggregateCompo (series: Series<BomId, BomCompo list>) = 
     series
+    |> Series.mapKeys(fun bomId -> bomId.CodeProduit )
     |> Series.mapValues(fun compos -> 
         compos 
         |> List.groupBy(fun compo -> (compo.CodeComposant,compo.DesignationComposant, compo.NatureComposant, compo.SousEnsemble))
@@ -48,6 +48,13 @@ let aggregateCompo (series: Series<BomId, BomCompo list>) =
             }
         )
     )
+
+let multiply (input: Series<Code, float>) (series: Series<Code, AggregatedBomCompo list>)=
+    series 
+    |> Series.map(fun bomId compos -> 
+        let q = Series.lookup bomId Lookup.Exact input
+        compos |> List.map(fun compo -> { compo with Quantite = compo.Quantite * q}) )
+
     
 type AggregatedBomCompoOutput = {
     CodeProduit : string
@@ -59,18 +66,18 @@ type AggregatedBomCompoOutput = {
     SousEnsembleComposant: string
 }
 
-let toAggregatedBomCompoOutputFrame (series: Series<BomId, AggregatedBomCompo list>) = 
+let toAggregatedBomCompoOutputFrame (series: Series<Code, AggregatedBomCompo list>) = 
     let des  = dfClassif.GetColumn File.libelle
         
     series
     |> Series.observations
-    |> Seq.collect(fun (bomId, compos) -> 
+    |> Seq.collect(fun (code, compos) -> 
         compos
         |> List.map(fun compo -> 
             {
-                CodeProduit = bomId.CodeProduit.Value
+                CodeProduit = code.Value
                 DesignationProduit = 
-                                Series.tryLookup bomId.CodeProduit Lookup.Exact des
+                                Series.tryLookup code Lookup.Exact des
                                 |> Option.defaultValue ""
                 
                 CodeComposant = compo.CodeComposant
@@ -81,10 +88,28 @@ let toAggregatedBomCompoOutputFrame (series: Series<BomId, AggregatedBomCompo li
             }) )
     |> Frame.ofRecords        
 
-let aggregateBomCompo (products: string list) (fileName: string) = 
+let aggregateBomCompo (input: Series<Code, float>) (fileName: string) = 
+    let products = 
+        input.Keys 
+        |> Seq.map (fun c -> c.Value) 
+        |> List.ofSeq
+
     filterProducts products
     |> aggregateCompo
+    |> multiply input
     |> toAggregatedBomCompoOutputFrame
     |> frameToCsv fileName
 
-aggregateBomCompo  ["155315";"155312";"155228";"155230";"155224";"155224";"155226";"155228"] "output2.csv"
+
+let s = 
+    [Code "155315" => 2. ]
+    |> series 
+
+#load "./DFInput.fsx"
+
+open DFInput
+open Input
+
+let input =dfInput.GetColumn<float> Input.quantite
+
+aggregateBomCompo input "output2.csv"
